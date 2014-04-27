@@ -49,6 +49,11 @@ class PyMageMainWindow(QtGui.QMainWindow):
         openAction.setStatusTip('Open image file')
         openAction.triggered.connect(self.loadFile)
         
+        exitAction = QtGui.QAction('E&xit', self)
+        exitAction.setShortcut('Escape')
+        exitAction.setStatusTip('Exit app')
+        exitAction.triggered.connect(self.close) 
+        
         plusAction = QtGui.QAction('Zoom &In', self)
         plusAction.setShortcut('Ctrl++')
         plusAction.triggered.connect(self.zoomInPixmap)
@@ -60,6 +65,7 @@ class PyMageMainWindow(QtGui.QMainWindow):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(openAction)
+        fileMenu.addAction(exitAction)
         viewMenu = menubar.addMenu('&View')
         viewMenu.addAction(plusAction)
         viewMenu.addAction(minusAction)
@@ -70,13 +76,9 @@ class PyMageMainWindow(QtGui.QMainWindow):
         self.toolbar.addAction(minusAction)
         QtGui.QToolBar.addSeparator(self.toolbar)
         
-        #self.openImage("img.jpg")
         self.setWindowTitle('PyMage')
         self.showMaximized()
         
-    def keyPressEvent(self, e):
-        if e.key() == QtCore.Qt.Key_Escape:
-            self.close()
 
 def main():
     app = QtGui.QApplication(sys.argv)

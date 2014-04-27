@@ -96,18 +96,24 @@ class PingerMainWindow(QtGui.QMainWindow):
         openAction.setStatusTip('Open text file with a list of hosts to ping')
         openAction.triggered.connect(self.centralWidget().openActionSlot) 
 
+        exitAction = QtGui.QAction('E&xit', self)
+        exitAction.setShortcut('Escape')
+        exitAction.setStatusTip('Exit app and stop pinging')
+        exitAction.triggered.connect(self.closeApp) 
+
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(openAction)
+        fileMenu.addAction(exitAction)
         
         self.setWindowTitle('Pinger 0.1')
         self.show()
-        
-    def keyPressEvent(self, e):
-        if e.key() == QtCore.Qt.Key_Escape:
-            self.closeEvent()
             
-    def closeEvent(self, ev):
+    def closeApp(self):
+        self.closeEvent()
+        self.close()
+        
+    def closeEvent(self, ev = 0):
         for pinger in pingers:
             pinger.p.kill()
 

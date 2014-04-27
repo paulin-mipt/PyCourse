@@ -75,7 +75,6 @@ class PyMageMainWindow(QtGui.QMainWindow):
         self.showMaximized()
         
     def keyPressEvent(self, e):
-        print(e.type())
         if e.key() == QtCore.Qt.Key_Escape:
             self.close()
 

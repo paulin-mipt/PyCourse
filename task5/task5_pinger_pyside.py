@@ -13,7 +13,10 @@ pingers = []
 addHostSignalizer = DataSignal()
 
 class HostPinger(): 
-    def __init__(self, host, num):
+    def __init__(self):
+        pass
+
+    def startPing(self, host, num):
         PIPE = subprocess.PIPE
         self.p = subprocess.Popen(["ping", host], stdin=PIPE, stdout=PIPE,
                               stderr=subprocess.STDOUT, close_fds=True)
@@ -21,10 +24,12 @@ class HostPinger():
     
         while answer:
             addHostSignalizer.sig.emit(str(answer)[2:-3], num + 2)
-            answer = self.p.stdout.readline()   
+            answer = self.p.stdout.readline()  
             
-def createPinger(host, num):   
-    pingers.append(HostPinger(host, num))
+def createPinger(host, num):  
+    png = HostPinger() 
+    pingers.append(png)
+    png.startPing(host, num)
 
 class PingerWidget(QtGui.QWidget):
     def __init__(self):
@@ -101,20 +106,16 @@ class PingerMainWindow(QtGui.QMainWindow):
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
             QtCore.Qt.Key_
-            self.close()
+            self.closeEvent()
+            
+    def closeEvent(self, ev):
+        for pinger in pingers:
+            pinger.p.kill()
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    wind = PingerMainWindow()
-    exitcode = app.exec_()
-    for pinger in pingers:
-        #os.killpg(pinger.p.pid, signal.SIGTERM)
-        pinger.p.kill()
-    
-    for thread in threads:
-        thread.join()
-        
-    sys.exit(exitcode)
+    wind = PingerMainWindow()      
+    sys.exit(app.exec_())
         
 if __name__ == '__main__':
     main()

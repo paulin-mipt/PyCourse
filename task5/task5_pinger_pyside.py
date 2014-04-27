@@ -105,7 +105,6 @@ class PingerMainWindow(QtGui.QMainWindow):
         
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
-            QtCore.Qt.Key_
             self.closeEvent()
             
     def closeEvent(self, ev):

@@ -1,38 +1,30 @@
 import threading
 import subprocess
-import argparse
 import sys
+import os
+import signal
 from PySide import QtGui, QtCore
 
 class DataSignal(QtCore.QObject):
     sig = QtCore.Signal(str, int)
-    
 
 threads = []
-signalizer = DataSignal()
+pingers = []
+addHostSignalizer = DataSignal()
 
-def ping_host(host, num): 
-    PIPE = subprocess.PIPE
-    p = subprocess.Popen(" ".join(["ping", host]), shell=True, stdin=PIPE, stdout=PIPE,
-        stderr=subprocess.STDOUT, close_fds=True)
-    answer = p.stdout.readline()
-    while answer:
-        signalizer.sig.emit(str(answer)[2:-3], num + 2)
-        answer = p.stdout.readline()        
-        
-'''class PopUpWidget(QtGui.QInputDialog):
-    def __init__(self):
-        super(PopUpWidget, self).__init__()
-        self.initUI()
+class HostPinger(): 
+    def __init__(self, host, num):
+        PIPE = subprocess.PIPE
+        self.p = subprocess.Popen(["ping", host], stdin=PIPE, stdout=PIPE,
+                              stderr=subprocess.STDOUT, close_fds=True)
+        answer = self.p.stdout.readline()
     
-    def initUI(self):
-        self.setInputMode(QtGui.QInputDialog.TextInput)
-        ip_addr = QtGui.QInputDialog.getText(self, "QInputDialog.getText()",
-                                          "User name:");
-        if not len(ip_addr) == 0:
-            print(ip_addr[0])
+        while answer:
+            addHostSignalizer.sig.emit(str(answer)[2:-3], num + 2)
+            answer = self.p.stdout.readline()   
             
-        self.show()'''
+def createPinger(host, num):   
+    pingers.append(HostPinger(host, num))
 
 class PingerWidget(QtGui.QWidget):
     def __init__(self):
@@ -43,30 +35,46 @@ class PingerWidget(QtGui.QWidget):
         self.initUI()
     
     def initUI(self):      
-        addNewBut = QtGui.QPushButton("Add new address")
+        addNewBut = QtGui.QPushButton("Add new host")        
+        addNewBut.clicked.connect(self.addHostSlot)
+        
+        loadListBut = QtGui.QPushButton("Load list from file")
+        loadListBut.clicked.connect(self.openActionSlot)
+        
+        addHostSignalizer.sig.connect(self.addData)
         self.addPopUp.setInputMode(QtGui.QInputDialog.TextInput)
-        addNewBut.clicked.connect(self.azaza)
-        signalizer.sig.connect(self.addData)
         
         self.grid.addWidget(addNewBut, 0, 1)
+        self.grid.addWidget(loadListBut, 0, 2)
         self.grid.addWidget(QtGui.QLabel("#"), 1, 0)
-        self.grid.addWidget(QtGui.QLabel("ip address"), 1, 1)
-        self.grid.addWidget(QtGui.QLabel("last ping response"), 1, 2)
+        self.grid.addWidget(QtGui.QLabel("Host"), 1, 1)
+        self.grid.addWidget(QtGui.QLabel("Last ping response"), 1, 2)
         self.setLayout(self.grid)
         
-    def azaza(self):
-        response = QtGui.QInputDialog.getText(self, "Enter IP", "Ip: ")
-        if response[1]:
-            ip = response[0]
-            self.grid.addWidget(QtGui.QLabel(str(self.counter)), self.counter + 2, 0)
-            self.grid.addWidget(QtGui.QLabel(ip), self.counter + 2, 1)
-            self.grid.addWidget(QtGui.QLabel(""), self.counter + 2, 2)
-            t = threading.Thread(target=ping_host, args=(ip, self.counter))
-            threads.append(t)
-            t.start()
-            self.counter += 1
+    def addLine(self, host):
+        self.grid.addWidget(QtGui.QLabel(str(self.counter)), self.counter + 2, 0)
+        self.grid.addWidget(QtGui.QLabel(host), self.counter + 2, 1)
+        self.grid.addWidget(QtGui.QLabel(""), self.counter + 2, 2)
+        t = threading.Thread(target=createPinger, args=(host, self.counter))
+        threads.append(t)
+        t.start()
+        self.counter += 1
     
-    '''slot for a data signal'''
+    def addHostSlot(self):
+        response = QtGui.QInputDialog.getText(self, "Enter host", "Enter ip or web-address")
+        if response[1]:
+            host = response[0]
+            self.addLine(host)
+            
+    def openActionSlot(self):
+        textFile = QtGui.QFileDialog.getOpenFileName(self, "Open text file",  os.getcwd())
+        f = open(textFile[0], 'r')
+        self.pingHostsList(f.read().split())
+        
+    def pingHostsList(self, l):
+        for host in l:
+            self.addLine(host)
+    
     def addData(self, response, lineNum):
         self.grid.itemAtPosition(lineNum, 2).widget().setText(response)
 
@@ -75,40 +83,38 @@ class PingerMainWindow(QtGui.QMainWindow):
         super(PingerMainWindow, self).__init__()
         self.initUI()
     
-    def initUI(self):        
-        '''openAction = QtGui.QAction('&Open IP list', self)
+    def initUI(self): 
+        self.setCentralWidget(PingerWidget())
+               
+        openAction = QtGui.QAction('&Load hosts list from file', self)
         openAction.setShortcut('Ctrl+O')
-        openAction.setStatusTip('Open text file with a list of IP addresses')
-        #openAction.triggered.connect() 
+        openAction.setStatusTip('Open text file with a list of hosts to ping')
+        openAction.triggered.connect(self.centralWidget().openActionSlot) 
 
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(openAction)'''
-        
-        self.setCentralWidget(PingerWidget())
+        fileMenu.addAction(openAction)
         
         self.setWindowTitle('Pinger 0.1')
         self.show()
         
     def keyPressEvent(self, e):
-        print(e.type())
         if e.key() == QtCore.Qt.Key_Escape:
+            QtCore.Qt.Key_
             self.close()
 
 def main():
     app = QtGui.QApplication(sys.argv)
     wind = PingerMainWindow()
-    sys.exit(app.exec_())
-
-    '''parser = argparse.ArgumentParser(description='Pinger v.0.0.9')
-    parser.add_argument('hosts', metavar = 'host', type = str, nargs = '+', 
-                    help = 'IP addresses, such as 127.0.0.1')
-    args = parser.parse_args()
-    threads = []
-    for i in range(len(args.hosts)):
-        t = threading.Thread(target=ping_host, args=(args.hosts[i],i,))
-        threads.append(t)
-        t.start() '''
+    exitcode = app.exec_()
+    for pinger in pingers:
+        #os.killpg(pinger.p.pid, signal.SIGTERM)
+        pinger.p.kill()
+    
+    for thread in threads:
+        thread.join()
+        
+    sys.exit(exitcode)
         
 if __name__ == '__main__':
     main()

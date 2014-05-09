@@ -5,7 +5,7 @@ Created on May 8, 2014
 
 import socket, argparse, os
 
-HOST, PORT = "localhost", 9944
+HOST, PORT = "localhost", 9941
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 parser = argparse.ArgumentParser(description='SuperDocumentReverser')
@@ -21,9 +21,9 @@ try:
     sock.connect((HOST, PORT))
     with open(filepath) as fread:
         for line in fread:
-            if "\n" == line[-1]:
+            if line[-1] == "\n":
                 line = line[:-1]
-            sock.sendall(bytes(line + "eol\n", "utf-8"))
+            sock.sendall(bytes("s" + line + "eol\n", "utf-8"))
     sock.sendall(bytes("eof\n", "utf-8"))
     
     received = sock.recv(2048).decode("utf-8")

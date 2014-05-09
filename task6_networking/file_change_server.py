@@ -13,13 +13,16 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             count += 1
             lines.append(self.rfile.readline().decode("utf-8")[:-4])
         for i in range(len(lines) - 1):
-            self.wfile.write(bytes(lines[-i-2][::-1] + "\n", "utf-8"))
+            send_line = lines[-i-2][1:][::-1]
+            if send_line != "\n":
+                send_line += "\n"
+            self.wfile.write(bytes(send_line, "utf-8"))
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 if __name__ == "__main__":
-    PORT = 9944
+    PORT = 9941
     server = ThreadedTCPServer(("localhost", PORT), MyTCPHandler)
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
